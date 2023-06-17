@@ -1,13 +1,13 @@
 ﻿  Building 'kernel-testing' with toolset 'WindowsKernelModeDriver10.0' and the 'Universal' target platform.
   Stamping x64\Release\kernel-testing.inf
-  Stamping [Version] section with DriverVer=06/17/2023,13.50.47.496
+  Stamping [Version] section with DriverVer=06/17/2023,14.7.30.37
   driver.c
   kernel-testing.vcxproj -> C:\Users\j0rdan0.win-server2019\source\repos\win-programming\kernel-testing\x64\Release\kernel-testing.sys
   Done Adding Additional Store
   Successfully signed: C:\Users\j0rdan0.win-server2019\source\repos\win-programming\kernel-testing\x64\Release\kernel-testing.sys
   
   Driver is 'Universal'.
-  ........................
+  .........................
   Signability test complete.
   
   Errors:

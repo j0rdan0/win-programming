@@ -51,6 +51,41 @@ KernelTestingDeviceAdd(
 
     DbgPrint("[*] callback function\n");
 
+    HANDLE proc = NULL;
+    CLIENT_ID  cid;
+    OBJECT_ATTRIBUTES obj_attr;
+    InitializeObjectAttributes(&obj_attr, NULL, OBJ_KERNEL_HANDLE, NULL, NULL);
+    ULONG pid = 96; // Registry proc
+    cid.UniqueProcess = (HANDLE)pid;
+    cid.UniqueThread = NULL;
+
+    NTSTATUS stat = ZwOpenProcess(&proc, PROCESS_ALL_ACCESS, &obj_attr, &cid);
+
+    switch (stat) {
+
+    case STATUS_INVALID_CID:
+        DbgPrint("Invaliv cid\n");
+        break;
+    case STATUS_INVALID_PARAMETER:
+        DbgPrint("Invalid params\n");
+        break;
+    case STATUS_ACCESS_DENIED:
+        DbgPrint("Access denied\n");
+        break;
+    case STATUS_ACCESS_VIOLATION:
+        DbgPrint("Status access violation\n");
+        break;
+    case STATUS_SUCCESS:
+        DbgPrint("[*] got proc handle\n");
+        break;
+    case STATUS_INVALID_PARAMETER_MIX:
+        DbgPrint("Invalid param mix\n");
+        break;
+    }
+    if (proc != NULL) {
+        ZwClose(proc);
+    }
+
     // Create the device object
     status = WdfDeviceCreate(&DeviceInit,
         WDF_NO_OBJECT_ATTRIBUTES,
