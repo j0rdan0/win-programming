@@ -1,0 +1,77 @@
+;
+; kernel-testing.inf
+;
+
+[Version]
+Signature="$WINDOWS NT$"
+Class=System ; TODO: specify appropriate Class
+ClassGuid={4d36e97d-e325-11ce-bfc1-08002be10318} ; TODO: specify appropriate ClassGuid
+Provider=%ManufacturerName%
+CatalogFile=kernel-testing.cat
+DriverVer= ; TODO: set DriverVer in stampinf property pages
+PnpLockdown=1
+
+[DestinationDirs]
+DefaultDestDir = 12
+kernel-testing_Device_CoInstaller_CopyFiles = 11
+
+[SourceDisksNames]
+1 = %DiskName%,,,""
+
+[SourceDisksFiles]
+kernel-testing.sys  = 1,,
+WdfCoInstaller$KMDFCOINSTALLERVERSION$.dll=1 ; make sure the number matches with SourceDisksNames
+
+;*****************************************
+; Install Section
+;*****************************************
+
+[Manufacturer]
+%ManufacturerName%=Standard,NT$ARCH$
+
+[Standard.NT$ARCH$]
+%kernel-testing.DeviceDesc%=kernel-testing_Device, Root\kernel-testing ; TODO: edit hw-id
+
+[kernel-testing_Device.NT]
+CopyFiles=Drivers_Dir
+
+[Drivers_Dir]
+kernel-testing.sys
+
+;-------------- Service installation
+[kernel-testing_Device.NT.Services]
+AddService = kernel-testing,%SPSVCINST_ASSOCSERVICE%, kernel-testing_Service_Inst
+
+; -------------- kernel-testing driver install sections
+[kernel-testing_Service_Inst]
+DisplayName    = %kernel-testing.SVCDESC%
+ServiceType    = 1               ; SERVICE_KERNEL_DRIVER
+StartType      = 3               ; SERVICE_DEMAND_START
+ErrorControl   = 1               ; SERVICE_ERROR_NORMAL
+ServiceBinary  = %12%\kernel-testing.sys
+
+;
+;--- kernel-testing_Device Coinstaller installation ------
+;
+
+[kernel-testing_Device.NT.CoInstallers]
+AddReg=kernel-testing_Device_CoInstaller_AddReg
+CopyFiles=kernel-testing_Device_CoInstaller_CopyFiles
+
+[kernel-testing_Device_CoInstaller_AddReg]
+HKR,,CoInstallers32,0x00010000, "WdfCoInstaller$KMDFCOINSTALLERVERSION$.dll,WdfCoInstaller"
+
+[kernel-testing_Device_CoInstaller_CopyFiles]
+WdfCoInstaller$KMDFCOINSTALLERVERSION$.dll
+
+[kernel-testing_Device.NT.Wdf]
+KmdfService =  kernel-testing, kernel-testing_wdfsect
+[kernel-testing_wdfsect]
+KmdfLibraryVersion = $KMDFVERSION$
+
+[Strings]
+SPSVCINST_ASSOCSERVICE= 0x00000002
+ManufacturerName="<Your manufacturer name>" ;TODO: Replace with your manufacturer name
+DiskName = "kernel-testing Installation Disk"
+kernel-testing.DeviceDesc = "kernel-testing Device"
+kernel-testing.SVCDESC = "kernel-testing Service"
