@@ -1,95 +1,56 @@
 #include <ntddk.h>
-#include <wdf.h>
-DRIVER_INITIALIZE DriverEntry;
-EVT_WDF_DRIVER_DEVICE_ADD KernelTestingDeviceAdd;
+#include <wdm.h>
+#include "test.h"
 
-NTSTATUS
-DriverEntry(
-    _In_ PDRIVER_OBJECT     DriverObject,
-    _In_ PUNICODE_STRING    RegistryPath
-)
-{
-    // NTSTATUS variable to record success or failure
-    NTSTATUS status = STATUS_SUCCESS;
 
-    // Allocate the driver configuration object
-    WDF_DRIVER_CONFIG config;
+void unload(PDRIVER_OBJECT driverObject) {
+	DbgPrint("unloading\n");
+	UNREFERENCED_PARAMETER(driverObject);
+	UNICODE_STRING sym_name = RTL_CONSTANT_STRING(L"\\??\\TEST_DEV");
+	IoDeleteSymbolicLink(&sym_name);
+	IoDeleteDevice(driverObject->DeviceObject);
 
-   
-    DbgPrint("[*] driver entry point, registering callback function\n");
-
-    // Initialize the driver configuration object to register the
-    // entry point for the EvtDeviceAdd callback,KernelTestingAdd
-    WDF_DRIVER_CONFIG_INIT(&config,
-        KernelTestingDeviceAdd
-    );
-
-    // Finally, create the driver object
-    status = WdfDriverCreate(DriverObject,
-        RegistryPath,
-        WDF_NO_OBJECT_ATTRIBUTES,
-        &config,
-        WDF_NO_HANDLE
-    );
-    return status;
 }
 
-NTSTATUS
-KernelTestingDeviceAdd(
-    _In_    WDFDRIVER       Driver,
-    _Inout_ PWDFDEVICE_INIT DeviceInit
-)
-{
-    // We're not using the driver object,
-    // so we need to mark it as unreferenced
-    UNREFERENCED_PARAMETER(Driver);
+NTSTATUS CreateClose(PDEVICE_OBJECT driverObject, PIRP irp) {
 
-    NTSTATUS status;
+	return STATUS_SUCCESS;
+}
 
-    // Allocate the device object
-    WDFDEVICE hDevice;
+NTSTATUS Write(PDEVICE_OBJECT driverObject,PIRP irp) {
 
-    DbgPrint("[*] callback function\n");
+	return STATUS_SUCCESS;
+}
 
-    HANDLE proc = NULL;
-    CLIENT_ID  cid;
-    OBJECT_ATTRIBUTES obj_attr;
-    InitializeObjectAttributes(&obj_attr, NULL, OBJ_KERNEL_HANDLE, NULL, NULL);
-    ULONG pid = 96; // Registry proc
-    cid.UniqueProcess = (HANDLE)pid;
-    cid.UniqueThread = NULL;
+NTSTATUS DriverEntry(PDRIVER_OBJECT driverObject, PUNICODE_STRING registryPath) {
 
-    NTSTATUS stat = ZwOpenProcess(&proc, PROCESS_ALL_ACCESS, &obj_attr, &cid);
+	UNREFERENCED_PARAMETER(driverObject);
+	UNREFERENCED_PARAMETER(registryPath);
+	DbgPrint("loaded\n");
+	
+	driverObject->MajorFunction[IRP_MJ_CREATE] = CreateClose;
+	driverObject->MajorFunction[IRP_MJ_CLOSE] = CreateClose;
+	driverObject->MajorFunction[IRP_MJ_WRITE] = Write;
+	driverObject->DriverUnload = unload;
+	;
+	PDEVICE_OBJECT dev;
+	UNICODE_STRING dev_name = RTL_CONSTANT_STRING(L"\\Device\\TEST_DEVICE");
+	UNICODE_STRING sym_name = RTL_CONSTANT_STRING(L"\\??\\TEST_DEV");
+	NTSTATUS stat = IoCreateDevice(driverObject, 0, &dev_name, FILE_DEVICE_UNKNOWN, 0, FALSE, &dev);
+	if (stat != STATUS_SUCCESS) {
+		DbgPrint("failed creating device\n");
 
-    switch (stat) {
-
-    case STATUS_INVALID_CID:
-        DbgPrint("Invaliv cid\n");
-        break;
-    case STATUS_INVALID_PARAMETER:
-        DbgPrint("Invalid params\n");
-        break;
-    case STATUS_ACCESS_DENIED:
-        DbgPrint("Access denied\n");
-        break;
-    case STATUS_ACCESS_VIOLATION:
-        DbgPrint("Status access violation\n");
-        break;
-    case STATUS_SUCCESS:
-        DbgPrint("[*] got proc handle\n");
-        break;
-    case STATUS_INVALID_PARAMETER_MIX:
-        DbgPrint("Invalid param mix\n");
-        break;
-    }
-    if (proc != NULL) {
-        ZwClose(proc);
-    }
-
-    // Create the device object
-    status = WdfDeviceCreate(&DeviceInit,
-        WDF_NO_OBJECT_ATTRIBUTES,
-        &hDevice
-    );
-    return status;
+	}
+	else {
+		DbgPrint("created device\n");
+		stat = IoCreateSymbolicLink(&sym_name, &dev_name);
+		if (stat != STATUS_SUCCESS) {
+			DbgPrint("failed creating sym link for device\n");
+			IoDeleteDevice(dev);
+		}
+		else {
+			DbgPrint("created sym link for device\n");
+		}
+	}
+	return STATUS_SUCCESS;
 }
