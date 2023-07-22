@@ -13,11 +13,24 @@ void unload(PDRIVER_OBJECT driverObject) {
 }
 
 NTSTATUS CreateClose(PDEVICE_OBJECT driverObject, PIRP irp) {
+	DbgPrint("created device\n");
+	irp->IoStatus.Status = STATUS_SUCCESS;
+	irp->IoStatus.Information = 0;
+	IoCompleteRequest(irp, IO_NO_INCREMENT);
 
 	return STATUS_SUCCESS;
 }
 
 NTSTATUS Write(PDEVICE_OBJECT driverObject,PIRP irp) {
+	
+	
+	PIO_STACK_LOCATION stack = IoGetCurrentIrpStackLocation(irp); 
+	struct Message* data = (struct Message*)irp->UserBuffer;
+	DbgPrint(data->text);
+
+	irp->IoStatus.Status = STATUS_SUCCESS;
+	irp->IoStatus.Information = 0;
+	IoCompleteRequest(irp, IO_NO_INCREMENT);
 
 	return STATUS_SUCCESS;
 }
