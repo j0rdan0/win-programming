@@ -23,10 +23,17 @@ NTSTATUS CreateClose(PDEVICE_OBJECT driverObject, PIRP irp) {
 
 NTSTATUS Write(PDEVICE_OBJECT driverObject,PIRP irp) {
 	
+	KIRQL kirql = 3, old_kirql;
 	
-	PIO_STACK_LOCATION stack = IoGetCurrentIrpStackLocation(irp); 
+	PIO_STACK_LOCATION stack = IoGetCurrentIrpStackLocation(irp);
 	struct Message* data = (struct Message*)irp->UserBuffer;
 	DbgPrint(data->text);
+	if (strcmp(data->text, "irq") == 0) {
+		KeRaiseIrql(kirql,&old_kirql);
+
+		DbgPrint("IRQL now is set to %d\n",KeGetCurrentIrql());
+		KeLowerIrql(old_kirql);
+	}
 
 	irp->IoStatus.Status = STATUS_SUCCESS;
 	irp->IoStatus.Information = 0;
